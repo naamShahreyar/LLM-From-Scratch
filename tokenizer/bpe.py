@@ -1,5 +1,7 @@
 import re
 import json
+import time
+import heapq
 from collections import Counter, deque
 
 from tokenizer.base import Tokenizer
@@ -38,19 +40,124 @@ class BPETokenizer(Tokenizer):
             [self.inverse_vocab[char] for char in token] for token in tokens
         ]
 
-        for new_id in range(len(self.vocab), vocab_size):
-            pair_id = self.find_frequent_pairs(token_id_sequences, mode="most")
-            if pair_id is None:
+        pair_counts = {}
+        pair_to_seqs = {}
+        for idx, seq in enumerate(token_id_sequences):
+            for pair in zip(seq, seq[1:]):
+                pair_counts[pair] = pair_counts.get(pair, 0) + 1
+                if pair not in pair_to_seqs:
+                    pair_to_seqs[pair] = set()
+                pair_to_seqs[pair].add(idx)
+
+        base_vocab_size = len(self.vocab)
+        total_merges = vocab_size - base_vocab_size
+        start_time = time.time()
+        print(f"Starting BPE: {len(token_id_sequences)} sequences, {len(pair_counts)} unique pairs")
+
+        heap = [(-count, pair) for pair, count in pair_counts.items()]
+        heapq.heapify(heap)
+
+        for new_id in range(base_vocab_size, vocab_size):
+            best_pair = None
+            while heap:
+                neg_count, pair = heapq.heappop(heap)
+                actual_count = pair_counts.get(pair, 0)
+                if actual_count > 0 and actual_count == -neg_count:
+                    best_pair = pair
+                    break
+            if best_pair is None:
                 break
-            token_id_sequences = self.replace_pairs(
-                token_id_sequences, pair_id, new_id
+
+            step = new_id - base_vocab_size
+            if step % 100 == 0 or new_id == vocab_size - 1:
+                elapsed = time.time() - start_time
+                rate = (step + 1) / elapsed if elapsed > 0 else 0
+                remaining = (total_merges - step - 1) / rate if rate > 0 else 0
+                print(
+                    f"Merge {step + 1}/{total_merges} | "
+                    f"pair={best_pair} freq={pair_counts[best_pair]} | "
+                    f"{elapsed:.0f}s elapsed, ~{remaining:.0f}s remaining"
+                )
+
+            self._replace_and_update_counts(
+                token_id_sequences, best_pair, new_id,
+                pair_counts, pair_to_seqs, heap
             )
-            self.bpe_merges[pair_id] = new_id
+            self.bpe_merges[best_pair] = new_id
+
+        elapsed = time.time() - start_time
+        print(f"Training complete: {len(self.bpe_merges)} merges in {elapsed:.1f}s")
 
         for (p0, p1), new_id in self.bpe_merges.items():
             merged_token = self.vocab[p0] + self.vocab[p1]
             self.vocab[new_id] = merged_token
             self.inverse_vocab[merged_token] = new_id
+
+    @staticmethod
+    def _replace_and_update_counts(
+        sequences, pair, new_id, pair_counts, pair_to_seqs, heap
+    ):
+        p0, p1 = pair
+        affected_idxs = pair_to_seqs.pop(pair, set())
+        pair_counts.pop(pair, None)
+        changed_pairs = set()
+
+        for idx in affected_idxs:
+            seq = sequences[idx]
+            new_seq = []
+            i = 0
+            while i < len(seq):
+                if i < len(seq) - 1 and seq[i] == p0 and seq[i + 1] == p1:
+                    if new_seq:
+                        left = new_seq[-1]
+                        old_left = (left, p0)
+                        pair_counts[old_left] = pair_counts.get(old_left, 0) - 1
+                        if pair_counts[old_left] <= 0:
+                            pair_counts.pop(old_left, None)
+                            pair_to_seqs.pop(old_left, None)
+                        else:
+                            changed_pairs.add(old_left)
+
+                    if i + 2 < len(seq):
+                        right = seq[i + 2]
+                        old_right = (p1, right)
+                        pair_counts[old_right] = pair_counts.get(old_right, 0) - 1
+                        if pair_counts[old_right] <= 0:
+                            pair_counts.pop(old_right, None)
+                            pair_to_seqs.pop(old_right, None)
+                        else:
+                            changed_pairs.add(old_right)
+
+                    new_seq.append(new_id)
+
+                    if len(new_seq) >= 2:
+                        new_left = (new_seq[-2], new_id)
+                        pair_counts[new_left] = pair_counts.get(new_left, 0) + 1
+                        if new_left not in pair_to_seqs:
+                            pair_to_seqs[new_left] = set()
+                        pair_to_seqs[new_left].add(idx)
+                        changed_pairs.add(new_left)
+
+                    if i + 2 < len(seq):
+                        right = seq[i + 2]
+                        new_right = (new_id, right)
+                        pair_counts[new_right] = pair_counts.get(new_right, 0) + 1
+                        if new_right not in pair_to_seqs:
+                            pair_to_seqs[new_right] = set()
+                        pair_to_seqs[new_right].add(idx)
+                        changed_pairs.add(new_right)
+
+                    i += 2
+                else:
+                    new_seq.append(seq[i])
+                    i += 1
+
+            sequences[idx] = new_seq
+
+        for p in changed_pairs:
+            count = pair_counts.get(p, 0)
+            if count > 0:
+                heapq.heappush(heap, (-count, p))
 
     def encode(self, text):
         tokens = self.pre_tokenize_text(text)
