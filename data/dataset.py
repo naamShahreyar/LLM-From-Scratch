@@ -40,3 +40,22 @@ def create_dataloader(
         num_workers=num_workers,
         drop_last=drop_last,
     )
+
+
+def create_dataloader_from_ids(
+    token_ids,
+    max_length,
+    stride,
+    batch_size=32,
+    shuffle=True,
+    num_workers=0,
+    drop_last=True,
+):
+    dataset = TextDataset(token_ids, max_length, stride)
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        drop_last=drop_last,
+    )

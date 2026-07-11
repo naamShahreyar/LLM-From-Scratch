@@ -6,7 +6,7 @@ from datasets import load_dataset
 from config.gpt_config import GPTConfig
 from tokenizer.bpe import BPETokenizer
 from model.llm import LLM
-from data.dataset import create_dataloader
+from data.dataset import create_dataloader_from_ids
 from training.trainer import train_model, load_checkpoint
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -39,24 +39,38 @@ print(f"Tokenizer loaded — vocab size: {len(tokenizer.vocab)}")
 
 # ── Dataset ───────────────────────────────────────────────────────────────────
 
-print("Loading TinyStories...")
-ds = load_dataset("roneneldan/TinyStories", split="train")
-train_text = "\n".join(ds["text"][:400_000])
+TRAIN_CACHE = "data/train_tokens.pt"
+VAL_CACHE = "data/val_tokens.pt"
 
-ds_val = load_dataset("roneneldan/TinyStories", split="validation")
-val_text = "\n".join(ds_val["text"][:5_000])
+if os.path.exists(TRAIN_CACHE) and os.path.exists(VAL_CACHE):
+    print("Loading cached token IDs...")
+    train_ids = torch.load(TRAIN_CACHE)
+    val_ids = torch.load(VAL_CACHE)
+else:
+    print("Tokenizing TinyStories (one-time, will be cached)...")
+    ds = load_dataset("roneneldan/TinyStories", split="train")
+    train_text = "\n".join(ds["text"])
+    train_ids = tokenizer.encode(train_text)
+    torch.save(train_ids, TRAIN_CACHE)
+    print(f"Train tokens: {len(train_ids):,} — saved to {TRAIN_CACHE}")
 
-print(f"Train chars: {len(train_text):,} | Val chars: {len(val_text):,}")
+    ds_val = load_dataset("roneneldan/TinyStories", split="validation")
+    val_text = "\n".join(ds_val["text"])
+    val_ids = tokenizer.encode(val_text)
+    torch.save(val_ids, VAL_CACHE)
+    print(f"Val tokens: {len(val_ids):,} — saved to {VAL_CACHE}")
 
-train_loader = create_dataloader(
-    train_text, tokenizer,
+print(f"Train tokens: {len(train_ids):,} | Val tokens: {len(val_ids):,}")
+
+train_loader = create_dataloader_from_ids(
+    train_ids,
     max_length=CONTEXT_LENGTH, stride=STRIDE,
-    batch_size=BATCH_SIZE, shuffle=True, drop_last=True, num_workers=2,
+    batch_size=BATCH_SIZE, shuffle=True, drop_last=True, num_workers=0,
 )
-val_loader = create_dataloader(
-    val_text, tokenizer,
+val_loader = create_dataloader_from_ids(
+    val_ids,
     max_length=CONTEXT_LENGTH, stride=STRIDE,
-    batch_size=BATCH_SIZE, shuffle=False, drop_last=False, num_workers=2,
+    batch_size=BATCH_SIZE, shuffle=False, drop_last=False, num_workers=0,
 )
 print(f"Train batches: {len(train_loader)} | Val batches: {len(val_loader)}")
 
