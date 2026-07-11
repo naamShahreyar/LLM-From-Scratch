@@ -49,14 +49,14 @@ train.py        Training script
 | Train loss | 2.03 |
 | Val loss | 2.38 |
 
-### Run 2 — Scaling up
+### Run 2 — Full dataset on A100
 | | Value |
 |---|---|
-| Dataset | 100k stories (~20M tokens) |
+| Dataset | 2.1M stories (~417M tokens) |
 | Epochs | 20 |
-| Batch size | 16 |
+| Batch size | 128 |
 | Max LR | 3e-4 |
-| Hardware | A100 GPU (Lightning AI) |
+| Hardware | A100 80GB (Lightning AI) |
 | Status | In progress |
 
 ## Sample Output (Run 1, Epoch 7)
