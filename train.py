@@ -65,12 +65,12 @@ print(f"Train tokens: {len(train_ids):,} | Val tokens: {len(val_ids):,}")
 train_loader = create_dataloader_from_ids(
     train_ids,
     max_length=CONTEXT_LENGTH, stride=STRIDE,
-    batch_size=BATCH_SIZE, shuffle=True, drop_last=True, num_workers=4,
+    batch_size=BATCH_SIZE, shuffle=True, drop_last=True, num_workers=4, pin_memory=True,
 )
 val_loader = create_dataloader_from_ids(
     val_ids,
     max_length=CONTEXT_LENGTH, stride=STRIDE,
-    batch_size=BATCH_SIZE, shuffle=False, drop_last=False, num_workers=4,
+    batch_size=BATCH_SIZE, shuffle=False, drop_last=False, num_workers=4, pin_memory=True,
 )
 print(f"Train batches: {len(train_loader)} | Val batches: {len(val_loader)}")
 

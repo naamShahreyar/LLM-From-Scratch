@@ -51,6 +51,7 @@ def create_dataloader_from_ids(
     shuffle=True,
     num_workers=0,
     drop_last=True,
+    pin_memory=False,
 ):
     dataset = TextDataset(token_ids, max_length, stride)
     return DataLoader(
@@ -59,4 +60,5 @@ def create_dataloader_from_ids(
         shuffle=shuffle,
         num_workers=num_workers,
         drop_last=drop_last,
+        pin_memory=pin_memory,
     )
