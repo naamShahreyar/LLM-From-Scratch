@@ -89,7 +89,8 @@ def train_model(model, train_loader, val_loader, optimizer, device,
                 num_epochs, warmup_steps, max_steps, max_lr, min_lr,
                 eval_freq, eval_iter, start_context, tokenizer,
                 checkpoint_dir="checkpoints", checkpoint_freq=1,
-                start_epoch=0, initial_step=0, wandb_run_id=None):
+                start_epoch=0, initial_step=0, wandb_run_id=None,
+                save_every=1000):
 
     os.makedirs(checkpoint_dir, exist_ok=True)
     train_losses, val_losses, track_tokens_seen = [], [], []
@@ -111,6 +112,12 @@ def train_model(model, train_loader, val_loader, optimizer, device,
             optimizer.step()
 
             tokens_seen += input_batch.numel()
+
+            if global_step % save_every == 0:
+                save_checkpoint(model, optimizer, epoch, global_step,
+                                train_losses, val_losses,
+                                os.path.join(checkpoint_dir, "latest.pt"),
+                                wandb_run_id=wandb_run_id)
 
             if global_step % eval_freq == 0:
                 train_loss, val_loss = evaluate_model(
