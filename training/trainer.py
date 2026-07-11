@@ -9,8 +9,9 @@ from model.generate import generate_text_simple, text_to_token_idx, token_idx_to
 def calc_loss_batch(input_batch, target_batch, model, device):
     input_batch = input_batch.to(device)
     target_batch = target_batch.to(device)
-    logits = model(input_batch)
-    return torch.nn.functional.cross_entropy(logits.flatten(0, 1), target_batch.flatten())
+    with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+        logits = model(input_batch)
+        return torch.nn.functional.cross_entropy(logits.flatten(0, 1), target_batch.flatten())
 
 
 def calc_loss_loader(data_loader, model, device, num_batches=None):
