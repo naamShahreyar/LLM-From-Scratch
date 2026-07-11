@@ -18,7 +18,7 @@ MAX_LR = 3e-4
 MIN_LR = MAX_LR * 0.1
 NUM_EPOCHS = 20
 WARMUP_STEPS = 200
-BATCH_SIZE = 16
+BATCH_SIZE = 128
 CONTEXT_LENGTH = GPTConfig.context_length
 STRIDE = CONTEXT_LENGTH
 EVAL_FREQ = 200
@@ -49,13 +49,13 @@ if os.path.exists(TRAIN_CACHE) and os.path.exists(VAL_CACHE):
 else:
     print("Tokenizing TinyStories (one-time, will be cached)...")
     ds = load_dataset("roneneldan/TinyStories", split="train")
-    train_text = "\n".join(ds["text"][:100_000])
+    train_text = "\n".join(ds["text"])
     train_ids = tokenizer.encode(train_text)
     torch.save(train_ids, TRAIN_CACHE)
     print(f"Train tokens: {len(train_ids):,} — saved to {TRAIN_CACHE}")
 
     ds_val = load_dataset("roneneldan/TinyStories", split="validation")
-    val_text = "\n".join(ds_val["text"][:5_000])
+    val_text = "\n".join(ds_val["text"])
     val_ids = tokenizer.encode(val_text)
     torch.save(val_ids, VAL_CACHE)
     print(f"Val tokens: {len(val_ids):,} — saved to {VAL_CACHE}")
