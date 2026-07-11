@@ -49,13 +49,13 @@ if os.path.exists(TRAIN_CACHE) and os.path.exists(VAL_CACHE):
 else:
     print("Tokenizing TinyStories (one-time, will be cached)...")
     ds = load_dataset("roneneldan/TinyStories", split="train")
-    train_text = "\n".join(ds["text"])
+    train_text = "\n".join(ds["text"][:40_000])
     train_ids = tokenizer.encode(train_text)
     torch.save(train_ids, TRAIN_CACHE)
     print(f"Train tokens: {len(train_ids):,} — saved to {TRAIN_CACHE}")
 
     ds_val = load_dataset("roneneldan/TinyStories", split="validation")
-    val_text = "\n".join(ds_val["text"])
+    val_text = "\n".join(ds_val["text"][:2_000])
     val_ids = tokenizer.encode(val_text)
     torch.save(val_ids, VAL_CACHE)
     print(f"Val tokens: {len(val_ids):,} — saved to {VAL_CACHE}")
