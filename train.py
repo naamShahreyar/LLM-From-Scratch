@@ -131,6 +131,7 @@ train_losses, val_losses, tokens_seen = train_model(
     checkpoint_dir=CHECKPOINT_DIR, checkpoint_freq=CHECKPOINT_FREQ,
     start_epoch=start_epoch, initial_step=global_step,
     wandb_run_id=wandb_run_id,
+    save_every=1000,
 )
 
 wandb.finish()

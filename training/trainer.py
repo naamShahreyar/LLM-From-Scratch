@@ -145,12 +145,12 @@ def train_model(model, train_loader, val_loader, optimizer, device,
         save_checkpoint(model, optimizer, epoch, global_step,
                         train_losses, val_losses,
                         os.path.join(checkpoint_dir, "latest.pt"),
-                        wandb_run_id=wandb_run_id)
+                        wandb_run_id=wandb_run_id, mid_epoch=False)
 
         if (epoch + 1) % checkpoint_freq == 0:
             save_checkpoint(model, optimizer, epoch, global_step,
                             train_losses, val_losses,
                             os.path.join(checkpoint_dir, f"ckpt_epoch{epoch+1}.pt"),
-                            wandb_run_id=wandb_run_id)
+                            wandb_run_id=wandb_run_id, mid_epoch=False)
 
     return train_losses, val_losses, track_tokens_seen
