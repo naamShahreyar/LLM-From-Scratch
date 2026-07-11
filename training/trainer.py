@@ -58,7 +58,7 @@ def get_lr(step, warmup_steps, max_steps, max_lr, min_lr):
     return min_lr + coeff * (max_lr - min_lr)
 
 
-def save_checkpoint(model, optimizer, epoch, global_step, train_losses, val_losses, path, wandb_run_id=None):
+def save_checkpoint(model, optimizer, epoch, global_step, train_losses, val_losses, path, wandb_run_id=None, mid_epoch=False):
     torch.save({
         "epoch": epoch,
         "global_step": global_step,
@@ -67,6 +67,7 @@ def save_checkpoint(model, optimizer, epoch, global_step, train_losses, val_loss
         "train_losses": train_losses,
         "val_losses": val_losses,
         "wandb_run_id": wandb_run_id,
+        "mid_epoch": mid_epoch,
     }, path)
     print(f"Checkpoint saved → {path}")
 
@@ -75,13 +76,16 @@ def load_checkpoint(path, model, optimizer, device):
     checkpoint = torch.load(path, map_location=device)
     model.load_state_dict(checkpoint["model_state"])
     optimizer.load_state_dict(checkpoint["optimizer_state"])
-    print(f"Resumed from {path} (epoch {checkpoint['epoch']+1}, step {checkpoint['global_step']})")
+    mid_epoch = checkpoint.get("mid_epoch", False)
+    epoch = checkpoint["epoch"]
+    print(f"Resumed from {path} (epoch {epoch+1}, step {checkpoint['global_step']}, mid_epoch={mid_epoch})")
     return (
-        checkpoint["epoch"],
+        epoch,
         checkpoint["global_step"],
         checkpoint["train_losses"],
         checkpoint["val_losses"],
         checkpoint.get("wandb_run_id"),
+        mid_epoch,
     )
 
 
@@ -117,7 +121,7 @@ def train_model(model, train_loader, val_loader, optimizer, device,
                 save_checkpoint(model, optimizer, epoch, global_step,
                                 train_losses, val_losses,
                                 os.path.join(checkpoint_dir, "latest.pt"),
-                                wandb_run_id=wandb_run_id)
+                                wandb_run_id=wandb_run_id, mid_epoch=True)
 
             if global_step % eval_freq == 0:
                 train_loss, val_loss = evaluate_model(

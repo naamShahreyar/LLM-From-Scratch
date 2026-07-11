@@ -88,10 +88,12 @@ max_steps = NUM_EPOCHS * len(train_loader)
 # ── Wandb + Resume ────────────────────────────────────────────────────────────
 
 if os.path.exists(CHECKPOINT_PATH):
-    start_epoch, global_step, train_losses, val_losses, wandb_run_id = load_checkpoint(
+    start_epoch, global_step, train_losses, val_losses, wandb_run_id, mid_epoch = load_checkpoint(
         CHECKPOINT_PATH, model, optimizer, device
     )
-    start_epoch += 1
+    if not mid_epoch:
+        start_epoch += 1  # end-of-epoch save: start next epoch
+    # mid-epoch save: resume from same epoch (re-runs some batches, keeps weights)
     wandb.init(
         project="gpt-from-scratch",
         id=wandb_run_id,
