@@ -187,11 +187,9 @@ class BPETokenizer(Tokenizer):
 
     def tokenize_with_bpe(self, token):
         token_ids = [self.inverse_vocab.get(char, None) for char in token]
-        if None in token_ids:
-            missing_chars = [
-                char for char, tid in zip(token, token_ids) if tid is None
-            ]
-            raise ValueError(f"Token contains unknown characters: {missing_chars}")
+        token_ids = [tid for tid in token_ids if tid is not None]
+        if not token_ids:
+            return []
 
         while len(token_ids) >= 2:
             pairs = set(zip(token_ids, token_ids[1:]))
