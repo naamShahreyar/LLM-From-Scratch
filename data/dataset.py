@@ -7,18 +7,19 @@ from tokenizer import BPETokenizer
 class TextDataset(Dataset):
 
     def __init__(self, token_ids, max_length, stride):
-        self.input_ids = []
-        self.target_ids = []
-
-        for i in range(0, len(token_ids) - max_length, stride):
-            self.input_ids.append(torch.tensor(token_ids[i : i + max_length]))
-            self.target_ids.append(torch.tensor(token_ids[i + 1 : i + max_length + 1]))
+        self.data = torch.tensor(token_ids, dtype=torch.long)
+        self.max_length = max_length
+        self.stride = stride
+        self.num_samples = (len(token_ids) - max_length) // stride
 
     def __len__(self):
-        return len(self.input_ids)
+        return self.num_samples
 
     def __getitem__(self, idx):
-        return self.input_ids[idx], self.target_ids[idx]
+        start = idx * self.stride
+        x = self.data[start : start + self.max_length]
+        y = self.data[start + 1 : start + self.max_length + 1]
+        return x, y
 
 
 def create_dataloader(
