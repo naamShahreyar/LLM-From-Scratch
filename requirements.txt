@@ -5,3 +5,5 @@ wandb
 transformers
 peft
 evaluate
+nltk
+rouge_score
