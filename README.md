@@ -36,9 +36,10 @@ train.py        Training script
 **Optimizer:** AdamW (weight_decay=0.1)  
 **LR schedule:** Cosine decay with linear warmup  
 **Gradient clipping:** max_norm=1.0  
+**Mixed precision:** BF16 (A100)  
 **Dataset:** [TinyStories](https://huggingface.co/datasets/roneneldan/TinyStories)
 
-### Run 1 — Baseline
+### Run 1 — Baseline (T4)
 | | Value |
 |---|---|
 | Dataset | 40k stories (~7.9M tokens) |
@@ -49,19 +50,26 @@ train.py        Training script
 | Train loss | 2.03 |
 | Val loss | 2.38 |
 
-### Run 2 — Full dataset on A100
+### Run 2 — Full dataset (A100)
 | | Value |
 |---|---|
 | Dataset | 2.1M stories (~417M tokens) |
-| Epochs | 20 |
+| Epochs | 3 |
 | Batch size | 128 |
 | Max LR | 3e-4 |
 | Hardware | A100 80GB (Lightning AI) |
-| Status | In progress |
+| Train loss | ~1.51 |
+| Val loss | ~1.56 |
 
-## Sample Output (Run 1, Epoch 7)
+## Sample Output (Run 2, Epoch 3)
 
-> *Once upon a time there was a little girl called Jane. Jane was a very cheerful girl and loved playing in her garden. One day, Jane was walking in the garden when she saw a white bird. It was yellow and pink and she was very happy. She picked it up and opened it.*
+> *Once upon a time there was a brave little boy named John. He wanted to play in the garden, so he got out his little yellow rake and started to rake the leaves.*
+>
+> *John's mom saw him struggling and came to help him. She told him to not be so careless. "John, always try your best and don't be careless."*
+>
+> *John smiled and said "I will!" He kept raking the leaves and he was very happy. After a while, John felt tired. He knew it was time to go inside and put his rake away.*
+>
+> *John's mom was so proud of him and hugged him tightly. She was very happy that he had listened to her and followed her instructions. The end.*
 
 ## Setup
 
@@ -91,7 +99,7 @@ optimizer = torch.optim.AdamW(model.parameters())
 load_checkpoint("checkpoints/latest.pt", model, optimizer, torch.device("cpu"))
 model.eval()
 
-def generate(model, prompt, max_new_tokens=100, temperature=0.8, top_k=40):
+def generate(model, prompt, max_new_tokens=200, temperature=0.8, top_k=40):
     idx = text_to_token_idx(prompt, tokenizer)
     for _ in range(max_new_tokens):
         idx_cond = idx[:, -512:]
