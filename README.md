@@ -71,6 +71,25 @@ train.py        Training script
 >
 > *John's mom was so proud of him and hugged him tightly. She was very happy that he had listened to her and followed her instructions. The end.*
 
+## Fine-Tuning (LoRA)
+
+Fine-tuned on [DialogSum](https://huggingface.co/datasets/knkarthick/dialogsum) (12k dialogue-summary pairs) using LoRA via the HuggingFace PEFT library.
+
+**LoRA config:** r=16, lora_alpha=64, target modules: W_query, W_key, W_value, out_proj  
+**Training:** 10 epochs, batch size 16, lr=3e-4, BF16 (A100)  
+**Trainable params:** ~786k / 70M (1.12%)
+
+### ROUGE Results (200 test samples)
+
+| Model | ROUGE-1 | ROUGE-2 | ROUGE-L |
+|---|---|---|---|
+| Base model (no fine-tuning) | 0.098 | 0.007 | 0.072 |
+| Base model + LoRA | **0.314** | **0.064** | **0.245** |
+| Flan-T5 zero-shot (reference) | 0.234 | 0.072 | 0.202 |
+| Flan-T5 + LoRA (reference) | 0.422 | 0.174 | 0.337 |
+
+LoRA fine-tuning improved ROUGE-1 by **+0.22** absolute. The fine-tuned model outperforms Flan-T5 zero-shot on ROUGE-1 and ROUGE-L despite being pretrained only on TinyStories.
+
 ## Setup
 
 ```bash
