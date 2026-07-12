@@ -2,3 +2,6 @@ datasets
 torch
 matplotlib
 wandb
+transformers
+peft
+evaluate
