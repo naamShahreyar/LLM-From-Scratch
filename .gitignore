@@ -4,3 +4,4 @@ gpt_env/
 __pycache__/
 checkpoints/
 .env
+wandb/
